@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>爸爸在楼下 · DAD'S DOWNSTAIRS</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23000'/><circle cx='16' cy='16' r='7' fill='%23d0202e'/></svg>">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- DV 机身滤镜层 -->
+  <div id="grainWrap"><canvas id="grain"></canvas></div>
+  <div id="scanlines"></div>
+  <div id="vignette"></div>
+  <div id="nvOverlay"></div>
+  <div id="staticOverlay"><canvas id="staticCv"></canvas></div>
+  <div id="flash"></div>
+  <div id="blackout"></div>
+
+  <!-- DV 取景器 HUD -->
+  <div id="hud">
+    <div class="hud-tl"><span id="recDot">●</span><span id="recText">REC</span></div>
+    <div class="hud-tr">
+      <div id="batteryWrap"><div id="batteryShell"><div id="batteryFill"></div></div><span id="batteryPct">100%</span></div>
+      <div id="spMode">SP</div>
+    </div>
+    <div class="hud-bl">
+      <div id="dvDate">OCT.16 2003</div>
+      <div id="dvTime">9:47:00 PM</div>
+    </div>
+    <div class="hud-br"><span id="tapeName">TAPE 07</span></div>
+    <div id="focusBox">[ <div class="fcorner tl"></div><div class="fcorner tr"></div><div class="fcorner bl"></div><div class="fcorner br"></div> ]</div>
+  </div>
+
+  <!-- 序章跳过（右上角，DV 机身风格） -->
+  <button id="skipBtn">⏭ SKIP 　<span style="opacity:.7">跳过 / Enter</span></button>
+
+  <!-- 新手引导 / 操作提示 / 目标方位 -->
+  <div id="guideBox">
+    <div id="guideTitle">■ 现在该做什么</div>
+    <div id="guideStep"></div>
+  </div>
+  <div id="keyhint"></div>
+  <div id="navArrow"><span id="navArrowGlyph">▲</span><span id="navDist"></span></div>
+
+  <!-- 交互提示 / 字幕 / 物品栏 -->
+  <div id="prompt"></div>
+  <div id="subtitle"><span id="subSpeaker"></span><span id="subText"></span></div>
+  <div id="inventory"></div>
+  <div id="objective"></div>
+  <div id="toast"></div>
+  <div id="strikes"><span class="sk used">Ⅰ</span><span class="sk">Ⅱ</span><span class="sk">Ⅲ</span></div>
+
+  <!-- 菜单 / 界面 -->
+  <div id="menu" class="screen">
+    <div class="vhsTitle">⏵ PLAY</div>
+    <h1>DAD'S DOWNSTAIRS</h1>
+    <div class="subtitleCN">爸 爸 在 楼 下</div>
+    <div class="menuBtns">
+      <button id="btnStart" class="mbtn">▶ 插入录像带（新的一局）</button>
+      <button id="btnHow" class="mbtn">☰ 操作说明</button>
+      <button id="btnGear" class="mbtn">⚙ 继承装备</button>
+    </div>
+    <div id="menuGear" class="gearBox"></div>
+    <div id="howBox" class="gearBox" style="display:none">
+      <p>【移动】 W A S D　　【视角】 鼠标（或按住左键拖拽）　　【互动/按住】 E</p>
+      <p>【跑步】 按住 Shift（快，但很响）　　【蹲下潜行】 C（最安静）　　【夜视】 F（耗电×4）</p>
+      <p>【备忘/目标】 Tab　　【换电池】 R　　【跳过动画】 Enter　　【暂停】 Esc</p>
+      <p class="dim">默认是走路。跑步会让他听见你——不到万不得已别跑。</p>
+      <p class="dim">电池是DV的生命，也是你在黑暗中唯一的眼睛。</p>
+    </div>
+    <div class="menuFoot">一部第一人称家庭恐怖 roguelike · 低多边形 · 录完这盘带子，就能离开这个家</div>
+  </div>
+
+  <div id="pause" class="screen" style="display:none">
+    <h1 class="pauseH">‖ PAUSE</h1>
+    <div class="menuBtns">
+      <button id="btnResume" class="mbtn">▶ 继续录制</button>
+      <button id="btnQuit" class="mbtn">⏏ 弹出录像带（回到标题）</button>
+    </div>
+  </div>
+
+  <div id="keypad" class="screen" style="display:none">
+    <div class="kpBox">
+      <div class="kpTitle">保险箱 · 请输入四位数字</div>
+      <div id="kpDisplay">＿＿＿＿</div>
+      <div class="kpGrid">
+        <button>1</button><button>2</button><button>3</button>
+        <button>4</button><button>5</button><button>6</button>
+        <button>7</button><button>8</button><button>9</button>
+        <button class="kpClear">清除</button><button>0</button><button class="kpOK">确认</button>
+      </div>
+      <div class="kpHint">提示会藏在家里的纸片、照片和账单里</div>
+    </div>
+  </div>
+
+  <div id="memoScreen" class="screen" style="display:none">
+    <div class="memoBox">
+      <div class="memoTitle">■ DV 备忘（Tab 关闭）</div>
+      <div id="memoList"></div>
+    </div>
+  </div>
+
+  <div id="endingScreen" class="screen" style="display:none">
+    <div class="endBox">
+      <div id="endVhs" class="vhsTitle">⏵ PLAY</div>
+      <h2 id="endTitle"></h2>
+      <div id="endBody"></div>
+      <div id="endStats"></div>
+      <div class="menuBtns">
+        <button id="btnAgain" class="mbtn">⏪ 倒回带子，再来一局</button>
+        <button id="btnTitle" class="mbtn">⏏ 回到标题</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="deathScreen" class="screen" style="display:none">
+    <div class="endBox">
+      <div id="deathTitle" class="deathTitle">逃 出 失 败</div>
+      <div id="deathSub" class="deathSub">你被父亲杀死了</div>
+      <div id="deathBtns" class="menuBtns">
+        <button id="btnRetry" class="mbtn">⏪ 换一盘新带子（重开，保留继承装备）</button>
+        <button id="btnTitle2" class="mbtn">⏏ 回到主菜单</button>
+      </div>
+      <div id="deathBody" class="endBody deathFoot"></div>
+    </div>
+  </div>
+
+  <div id="choiceBox" style="display:none">
+    <div class="chText" id="choiceText"></div>
+    <div class="chBtns"><button id="chYes" class="mbtn">【E】 确认</button><button id="chNo" class="mbtn">【Q】 住手</button></div>
+  </div>
+
+  <div id="loading">LOADING TAPE…</div>
+
+  <script type="importmap">
+  { "imports": { "three": "./libs/three.module.js" } }
+  </script>
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

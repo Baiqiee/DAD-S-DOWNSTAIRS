@@ -1,0 +1,189 @@
+/* 爸爸在楼下 DAD'S DOWNSTAIRS — DV实录滤镜UI */
+* { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+html,body { width:100%; height:100%; overflow:hidden; background:#000; font-family:"Consolas","Courier New",monospace; }
+#game { position:fixed; inset:0; width:100%; height:100%; display:block; }
+
+/* ============ DV 滤镜层 ============ */
+#grainWrap { position:fixed; inset:0; pointer-events:none; z-index:20; mix-blend-mode:overlay; opacity:.55; }
+#grain { width:100%; height:100%; }
+#scanlines { position:fixed; inset:0; pointer-events:none; z-index:21;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px); opacity:.5; }
+#vignette { position:fixed; inset:0; pointer-events:none; z-index:22;
+  background:radial-gradient(ellipse at center, transparent 52%, rgba(0,0,0,.55) 88%, rgba(0,0,0,.85) 100%); }
+#nvOverlay { position:fixed; inset:0; pointer-events:none; z-index:23; display:none;
+  background:radial-gradient(ellipse at center, rgba(60,255,90,.10) 40%, rgba(20,120,40,.28) 100%);
+  box-shadow:inset 0 0 120px rgba(0,80,20,.8); }
+body.nightvision #nvOverlay { display:block; }
+body.nightvision #game { filter:saturate(0) brightness(2.4) contrast(1.15) sepia(1) hue-rotate(60deg) !important; }
+body.dvblur #game { filter:blur(2.5px) brightness(1.05); }
+#staticOverlay { position:fixed; inset:0; z-index:40; pointer-events:none; opacity:0; background:#000; }
+#staticCv { width:100%; height:100%; }
+#flash { position:fixed; inset:0; z-index:41; pointer-events:none; background:#fff; opacity:0; }
+#blackout { position:fixed; inset:0; z-index:60; pointer-events:none; background:#000; opacity:0; transition:opacity .6s; }
+#blackout.show { opacity:1; } #blackout.hide { opacity:0; }
+
+/* 序章跳过按钮（右上角，与 HUD 同风格） */
+#skipBtn { position:fixed; top:82px; right:34px; z-index:44; display:none; cursor:pointer;
+  background:rgba(0,0,0,.42); border:1px solid rgba(232,232,232,.5); color:#e8e8e8;
+  font-family:"Consolas","Courier New",monospace; font-size:15px; letter-spacing:2px;
+  padding:7px 14px; border-radius:2px; text-shadow:0 0 6px rgba(255,255,255,.35), 1px 1px 0 rgba(0,0,0,.9);
+  transition:background .15s, border-color .15s, color .15s; }
+#skipBtn:hover { background:rgba(255,210,74,.16); border-color:#ffd24a; color:#ffd24a; }
+#skipBtn:active { transform:translateY(1px); }
+
+/* ============ 取景器 HUD ============ */
+#hud { position:fixed; inset:0; z-index:25; pointer-events:none; color:#e8e8e8;
+  text-shadow:0 0 6px rgba(255,255,255,.45), 1px 1px 0 rgba(0,0,0,.8);
+  font-family:"Consolas",monospace; letter-spacing:1px; }
+.hud-tl { position:absolute; top:26px; left:34px; font-size:26px; font-weight:bold; }
+#recDot { color:#f22; margin-right:8px; animation:blink 1.1s steps(1) infinite; }
+@keyframes blink { 50% { opacity:0; } }
+.hud-tr { position:absolute; top:26px; right:34px; text-align:right; font-size:20px; }
+#batteryShell { display:inline-block; width:44px; height:18px; border:2px solid #e8e8e8; border-radius:2px;
+  position:relative; vertical-align:middle; margin-left:10px; padding:2px; }
+#batteryShell::after { content:""; position:absolute; right:-6px; top:4px; width:4px; height:6px; background:#e8e8e8; }
+#batteryFill { height:100%; background:#e8e8e8; width:100%; }
+#batteryPct { margin-left:6px; font-size:16px; vertical-align:middle; }
+.hud-bl { position:absolute; bottom:30px; left:34px; font-size:20px; }
+#dvTime { font-size:24px; margin-top:2px; }
+.hud-br { position:absolute; bottom:30px; right:34px; font-size:18px; opacity:.85; }
+#spMode { margin-top:4px; }
+#focusBox { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:90px; height:90px;
+  opacity:0; transition:opacity .2s; }
+#focusBox.on { opacity:.9; }
+.fcorner { position:absolute; width:22px; height:22px; border:2px solid #eee; }
+.fcorner.tl { top:0; left:0; border-right:none; border-bottom:none; }
+.fcorner.tr { top:0; right:0; border-left:none; border-bottom:none; }
+.fcorner.bl { bottom:0; left:0; border-right:none; border-top:none; }
+.fcorner.br { bottom:0; right:0; border-left:none; border-top:none; }
+
+/* ============ 新手引导 / 操作提示 / 目标方位 ============ */
+#guideBox { position:fixed; left:34px; bottom:150px; z-index:26; width:330px; display:none;
+  background:rgba(0,0,0,.5); border-left:3px solid #ffd24a; padding:10px 14px 12px;
+  font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#e6e0d0; font-size:14px; line-height:1.7; }
+#guideTitle { color:#ffd24a; font-size:12px; letter-spacing:2px; margin-bottom:5px; }
+#guideStep b { color:#8fd0ff; }
+#keyhint { position:fixed; top:22px; left:150px; z-index:26; display:none;
+  background:rgba(0,0,0,.5); padding:7px 16px; border-radius:3px; color:#cfd8e0; font-size:14px;
+  font-family:"Microsoft YaHei",sans-serif; letter-spacing:1px; text-shadow:1px 1px 2px #000; text-align:left; white-space:nowrap; }
+#keyhint b { color:#ffd24a; }
+#navArrow { position:fixed; z-index:26; display:none; transform:translate(-50%,-50%);
+  color:#ffd24a; font-size:22px; text-shadow:0 0 8px rgba(0,0,0,.9); pointer-events:none; text-align:center; }
+#navArrowGlyph { display:block; line-height:1; }
+#navDist { display:block; font-size:11px; margin-top:2px; opacity:.85; font-family:Consolas,monospace; }
+
+/* ============ 交互提示 / 字幕 / 物品 ============ */
+#prompt { position:fixed; left:50%; bottom:22%; transform:translateX(-50%); z-index:26; color:#fff;
+  font-size:19px; text-shadow:1px 1px 2px #000, 0 0 8px rgba(0,0,0,.9); pointer-events:none;
+  background:rgba(0,0,0,.45); padding:6px 16px; border-radius:3px; display:none; letter-spacing:1px; }
+#prompt .key { color:#ffd24a; font-weight:bold; }
+#subtitle { position:fixed; left:50%; bottom:9.5%; transform:translateX(-50%); z-index:26; max-width:72%;
+  text-align:center; font-size:21px; color:#f2f2f2; text-shadow:1px 1px 2px #000, 0 0 10px #000;
+  pointer-events:none; line-height:1.55; font-family:"Microsoft YaHei","PingFang SC",sans-serif; }
+#subSpeaker { color:#8fd0ff; margin-right:10px; }
+#inventory { position:fixed; left:34px; top:80px; z-index:26; color:#ddd; font-size:15px;
+  pointer-events:none; text-shadow:1px 1px 2px #000; line-height:1.9; font-family:"Microsoft YaHei",sans-serif; }
+#inventory .slot { opacity:.92; }
+#inventory .slot::before { content:"▣ "; color:#ffd24a; }
+#objective { position:fixed; right:34px; top:80px; z-index:26; color:#cfe8cf; font-size:14px; max-width:270px;
+  text-align:right; pointer-events:none; text-shadow:1px 1px 2px #000; line-height:1.7;
+  font-family:"Microsoft YaHei",sans-serif; opacity:.9; }
+#objective::before { content:"◆ 当前备忘"; display:block; color:#8fd0ff; font-size:13px; margin-bottom:2px; }
+#toast { position:fixed; left:50%; top:18%; transform:translateX(-50%); z-index:27; color:#ffe9a8;
+  font-size:19px; text-shadow:1px 1px 2px #000; pointer-events:none; opacity:0; transition:opacity .4s;
+  font-family:"Microsoft YaHei",sans-serif; background:rgba(0,0,0,.4); padding:8px 22px; border-radius:3px;
+  letter-spacing:2px; text-align:center; }
+#strikes { position:fixed; top:50%; left:18px; transform:translateY(-50%); z-index:26; display:flex;
+  flex-direction:column; gap:10px; pointer-events:none; }
+.sk { width:34px; height:34px; line-height:32px; text-align:center; border:1px solid rgba(255,255,255,.35);
+  border-radius:50%; color:rgba(255,255,255,.3); font-size:16px; background:rgba(0,0,0,.3); }
+.sk.used { color:#ff4444; border-color:#ff4444; text-shadow:0 0 10px #f00; animation:strikePulse 2s infinite; }
+@keyframes strikePulse { 50% { box-shadow:0 0 14px rgba(255,0,0,.5); } }
+
+/* ============ 全屏菜单 ============ */
+/* z-index 必须高于 #blackout(60)，否则黑场会把结算画面整个盖住，变成永久黑屏 */
+.screen { position:fixed; inset:0; z-index:70; background:#050505; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; color:#ddd; text-align:center; }
+#menu { background:radial-gradient(ellipse at 50% 40%, #101418 0%, #040506 75%); }
+.vhsTitle { font-size:18px; color:#7ee27e; letter-spacing:6px; margin-bottom:18px; opacity:.9;
+  animation:blink 3s steps(1) infinite; }
+#menu h1 { font-size:74px; color:#eee; letter-spacing:14px; font-weight:700;
+  text-shadow:2px 0 #d3392b88, -2px 0 #2b8fd388, 0 0 30px rgba(255,255,255,.25); }
+.subtitleCN { font-size:20px; letter-spacing:14px; color:#999; margin:14px 0 44px;
+  font-family:"Microsoft YaHei",sans-serif; }
+.menuBtns { display:flex; flex-direction:column; gap:14px; }
+.mbtn { background:transparent; border:1px solid #666; color:#ccc; padding:12px 44px; font-size:17px;
+  cursor:pointer; letter-spacing:3px; font-family:"Microsoft YaHei","Consolas",monospace; transition:all .15s; }
+.mbtn:hover { border-color:#fff; color:#fff; background:rgba(255,255,255,.08); letter-spacing:5px; }
+.menuFoot { position:absolute; bottom:30px; font-size:13px; color:#555; letter-spacing:2px;
+  font-family:"Microsoft YaHei",sans-serif; }
+.gearBox { margin-top:26px; max-width:640px; font-size:15px; color:#aaa; line-height:2;
+  font-family:"Microsoft YaHei",sans-serif; }
+.gearBox .gi { color:#ffd24a; }
+.gearBox .gi::before { content:"★ "; }
+.pauseH { font-size:46px; letter-spacing:10px; color:#ddd; margin-bottom:36px; }
+
+/* 保险箱 */
+.kpBox { background:rgba(20,20,22,.96); border:1px solid #444; padding:34px 44px; border-radius:4px; }
+.kpTitle { font-size:16px; color:#999; margin-bottom:16px; font-family:"Microsoft YaHei",sans-serif; }
+#kpDisplay { font-size:44px; letter-spacing:16px; color:#7ee27e; margin-bottom:20px; min-height:56px;
+  text-shadow:0 0 12px rgba(126,226,126,.6); }
+.kpGrid { display:grid; grid-template-columns:repeat(3,72px); gap:8px; }
+.kpGrid button { height:52px; font-size:20px; background:#1a1a1c; color:#ddd; border:1px solid #444;
+  cursor:pointer; font-family:inherit; }
+.kpGrid button:hover { background:#2a2a2e; }
+.kpGrid .kpOK { color:#7ee27e; } .kpGrid .kpClear { color:#e2a97e; }
+.kpHint { margin-top:16px; font-size:12px; color:#666; font-family:"Microsoft YaHei",sans-serif; }
+
+/* 备忘 */
+.memoBox { background:rgba(8,10,8,.94); border:1px solid #3a4a3a; padding:30px 42px; max-width:560px;
+  max-height:70vh; overflow:auto; text-align:left; }
+.memoTitle { color:#7ee27e; font-size:16px; letter-spacing:3px; margin-bottom:18px; }
+#memoList { color:#b9d8b9; font-size:15px; line-height:2.1; font-family:"Microsoft YaHei",sans-serif; }
+#memoList .done { color:#577; text-decoration:line-through; }
+#memoList div::before { content:"▸ "; color:#7ee27e; }
+
+/* 结局 / 死亡 */
+.endBox { max-width:720px; padding:0 30px; }
+#endTitle, .endBox h2 { font-size:44px; letter-spacing:10px; margin:12px 0 26px; color:#eee;
+  font-family:"Microsoft YaHei",sans-serif; }
+#endBody, .endBody { font-size:17px; line-height:2.2; color:#bbb; font-family:"Microsoft YaHei",sans-serif;
+  text-align:left; }
+#endStats { margin:26px 0; color:#7ee27e; font-size:14px; line-height:2; }
+#deathScreen { background:radial-gradient(ellipse at 50% 45%, #1a0407 0%, #0a0203 45%, #000 100%); }
+#deathScreen .endBox { display:flex; flex-direction:column; align-items:center; }
+.deathTitle { font-size:60px; letter-spacing:18px; font-weight:700; color:#c8102e; margin:10px 0 16px;
+  font-family:"Microsoft YaHei",sans-serif; text-indent:18px;
+  text-shadow:0 0 26px rgba(200,16,46,.55), 0 0 70px rgba(120,0,0,.45); }
+.deathSub { font-size:17px; letter-spacing:6px; color:#96555e; margin-bottom:36px; text-indent:6px;
+  font-family:"Microsoft YaHei",sans-serif; }
+.deathFoot { font-size:13px; color:#6a4349; text-align:center; line-height:2.1; margin-top:30px;
+  max-width:520px; font-family:"Microsoft YaHei",sans-serif; }
+/* 分段淡入：标题 → 小字 → 按钮 → 补充信息 */
+#deathScreen .endBox > * { opacity:0; transform:translateY(14px);
+  transition:opacity 1.1s ease, transform 1.1s ease; }
+#deathScreen.reveal #deathTitle { opacity:1; transform:none; transition-delay:.5s;
+  animation:deathPulse 3.6s ease-in-out 1.6s infinite; }
+#deathScreen.reveal #deathSub   { opacity:1; transform:none; transition-delay:1.9s; }
+#deathScreen.reveal #deathBtns  { opacity:1; transform:none; transition-delay:3.1s; }
+#deathScreen.reveal #deathBody  { opacity:1; transform:none; transition-delay:4.3s; }
+@keyframes deathPulse {
+  0%,100% { text-shadow:0 0 26px rgba(200,16,46,.5), 0 0 70px rgba(120,0,0,.4); }
+  50%     { text-shadow:0 0 34px rgba(226,24,54,.85), 0 0 100px rgba(150,0,0,.6); }
+}
+
+/* 抉择 */
+#choiceBox { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:55;
+  background:rgba(5,5,5,.92); border:1px solid #555; padding:30px 40px; text-align:center; }
+.chText { color:#eee; font-size:19px; line-height:2; margin-bottom:20px;
+  font-family:"Microsoft YaHei",sans-serif; max-width:460px; }
+.chBtns { display:flex; gap:18px; justify-content:center; }
+
+#loading { position:fixed; inset:0; z-index:99; background:#000; color:#7ee27e; display:flex;
+  align-items:center; justify-content:center; font-size:20px; letter-spacing:8px; }
+
+/* 按住进度环 */
+#holdRing { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:26; width:64px;
+  height:64px; pointer-events:none; display:none; }
+#holdRing svg { width:100%; height:100%; transform:rotate(-90deg); }
+#holdRing circle { fill:none; stroke-width:4; }

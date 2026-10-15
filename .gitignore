@@ -1,0 +1,16 @@
+# 依赖
+node_modules/
+package-lock.json
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
+
+# WorkBuddy 工程数据与发布标记
+.workbuddy/
+*.genie
